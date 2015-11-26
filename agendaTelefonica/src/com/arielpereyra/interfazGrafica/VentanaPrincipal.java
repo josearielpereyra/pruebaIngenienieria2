@@ -11,12 +11,16 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -54,6 +58,7 @@ public class VentanaPrincipal extends JFrame{
 	public VentanaPrincipal()
 	{
 		super("Mi Agenda");
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setSize(new Dimension(600, 500));
 		
 		JPanel panelNorte = new JPanel( new BorderLayout() );
@@ -98,14 +103,7 @@ public class VentanaPrincipal extends JFrame{
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Contacto nuevoContacto = new Contacto(txtNombre.getText(), txtApellido.getText(), 
-						txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText() );
-				
-				agenda.guardarContacto(nuevoContacto);
-				
-				System.out.println("entro aqui");
-				actualizarTabla();
-				limpiarCampos();
+				guardar();
 			}
 		});
 		botonCancelar = new JButton("Cancelar");
@@ -130,18 +128,71 @@ public class VentanaPrincipal extends JFrame{
 	
 		agenda = new Agenda();	
 		
-		tablaDatos = new JTable( 	agenda.obtenerDatosContactos(), 
-									agenda.obtenerNombresDeColumnas() );
+		tablaDatos = new JTable();
+		actualizarTabla();
 		
 		panelDatos.add(new JScrollPane( tablaDatos ));
+		
+		MetodosUtilitarios.agregarMenu(this);
+		
+		addWindowListener(new WindowAdapter() {
+			
+			@Override
+			public void windowClosing(WindowEvent evento) {
+				JFrame ventana = ((JFrame)evento.getSource());
+				MetodosUtilitarios.confirmarCierre( ventana );
+			}
+		});
 	}
 	
+	private void guardar()
+	{
+		removerEspacios();
+		if( hayCamposVacios() )
+		{
+			JOptionPane.showMessageDialog(this, "No puede haber campos vacios...");			
+		}
+		else
+		{
+			Contacto nuevoContacto = new Contacto(txtNombre.getText(), txtApellido.getText(), 
+					txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText() );
+			
+			agenda.guardarContacto(nuevoContacto);
+			
+			System.out.println("entro aqui");
+			actualizarTabla();
+			limpiarCampos();
+		}
+
+	}
+
+	protected boolean hayCamposVacios() {
+		return txtApellido.getText().isEmpty() || 
+				txtNombre.getText().isEmpty() || 
+				txtDireccion.getText().isEmpty() || 
+				txtEmail.getText().isEmpty()||
+				txtTelefono.getText().isEmpty();
+	}
+
+	
+	private void removerEspacios() {
+		txtNombre.setText( txtNombre.getText().trim() );
+		txtApellido.setText( txtApellido.getText().trim() );
+		txtDireccion.setText( txtDireccion.getText().trim() );
+		txtEmail.setText( txtEmail.getText().trim() );
+		txtTelefono.setText( txtTelefono.getText().trim() );
+	}
+
 	public void actualizarTabla()
 	{
 		agenda.actualizarContactos();
 		tablaDatos.setModel(
-			new DefaultTableModel( agenda.obtenerDatosContactos(),agenda.obtenerNombresDeColumnas() ) );
-		
+			new DefaultTableModel( agenda.obtenerDatosContactos(),agenda.obtenerNombresDeColumnas() ) {
+				@Override
+				public boolean isCellEditable(int row, int column) {
+					return false;
+				};
+			});		
 	}
 	
 	public void limpiarCampos()
@@ -153,10 +204,13 @@ public class VentanaPrincipal extends JFrame{
 		}
 	}
 
+
 	public static void main(String[] args) {		
 		VentanaPrincipal miVentanaPrincipal = new VentanaPrincipal();
 		miVentanaPrincipal.setVisible(true);
 		
 	}
+	
+	
 
 }
